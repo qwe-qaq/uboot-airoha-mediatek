@@ -8,7 +8,7 @@ failsafe_compatible_num=3
 
 console=earlycon=uart8250,mmio32,0x11002000 console=ttyS0
 bootcmd=run check_buttons ; run boot_ubi
-bootconf=config-1
+bootconf=config@1
 bootdelay=0
 
 bootfile=openwrt-airoha-an7581-fiberhome_hg5585f-ubi-initramfs-recovery.itb
