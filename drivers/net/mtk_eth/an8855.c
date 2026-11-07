@@ -627,8 +627,8 @@ static int an8855_port_sgmii_init(struct an8855_switch_priv *priv, u32 port)
 	an8855_reg_read(priv, AN8855_RX_CTRL_8, &val);
 	val &= ~(0xfff << 16);
 	val |= (0x200 << 16);
-	val &= ~(0x7fff << 14);
-	val |= (0xfff << 14);
+	val &= ~0x7fff;
+	val |= 0xfff;
 	an8855_reg_write(priv, AN8855_RX_CTRL_8, val);
 
 	/* Frequency memter */
