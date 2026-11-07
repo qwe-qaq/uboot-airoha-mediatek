@@ -599,7 +599,8 @@ static int an8855_port_sgmii_init(struct an8855_switch_priv *priv, u32 port)
 	an8855_reg_write(priv, AN8855_PLL_CTRL_0, val);
 
 	an8855_reg_read(priv, AN8855_RX_CTRL_26, &val);
-	val &= ~BIT(23);
+	val |= BIT(23);
+	val &= ~BIT(24);
 	val |= BIT(26);
 	an8855_reg_write(priv, AN8855_RX_CTRL_26, val);
 
