@@ -96,6 +96,8 @@
 #define AN8855_SS_LCPLL_TDC_PCW_1		(AN8855_QP_PMA_TOP_BASE + 0x248)
 #define AN8855_INTF_CTRL_8			(AN8855_QP_PMA_TOP_BASE + 0x320)
 #define AN8855_INTF_CTRL_9			(AN8855_QP_PMA_TOP_BASE + 0x324)
+#define AN8855_INTF_CTRL_10			(AN8855_QP_PMA_TOP_BASE + 0x328)
+#define AN8855_INTF_CTRL_11			(AN8855_QP_PMA_TOP_BASE + 0x32c)
 #define AN8855_PLL_CTRL_0			(AN8855_QP_PMA_TOP_BASE + 0x400)
 #define AN8855_PLL_CTRL_2			(AN8855_QP_PMA_TOP_BASE + 0x408)
 #define AN8855_PLL_CTRL_3			(AN8855_QP_PMA_TOP_BASE + 0x40c)
@@ -113,6 +115,7 @@
 #define AN8855_QP_ANA_CSR_BASE			0x1022f000
 #define AN8855_RG_QP_RX_DAC_EN			(AN8855_QP_ANA_CSR_BASE + 0x00)
 #define AN8855_RG_QP_RXAFE_RESERVE		(AN8855_QP_ANA_CSR_BASE + 0x04)
+#define AN8855_RG_QP_CDR_LPF_BOT_LIM		(AN8855_QP_ANA_CSR_BASE + 0x08)
 #define AN8855_RG_QP_CDR_LPF_MJV_LIM		(AN8855_QP_ANA_CSR_BASE + 0x0c)
 #define AN8855_RG_QP_CDR_LPF_SETVALUE		(AN8855_QP_ANA_CSR_BASE + 0x14)
 #define AN8855_RG_QP_CDR_PR_CKREF_DIV1		(AN8855_QP_ANA_CSR_BASE + 0x18)
@@ -433,6 +436,27 @@ static int an8855_port_sgmii_init(struct an8855_switch_priv *priv, u32 port)
 		printf("an8855: port %d is not a SGMII port\n", port);
 		return -EINVAL;
 	}
+
+	/* TX FIR - improve TX EYE for 2500BASE-X */
+	an8855_reg_read(priv, AN8855_INTF_CTRL_10, &val);
+	val &= ~(0x1f << 24);
+	val |= (0x04 << 24);
+	val &= ~(0x1f << 16);
+	val |= BIT(29) | BIT(21);
+	an8855_reg_write(priv, AN8855_INTF_CTRL_10, val);
+
+	an8855_reg_read(priv, AN8855_INTF_CTRL_11, &val);
+	val &= ~(0x3f << 0);
+	val |= BIT(6);
+	an8855_reg_write(priv, AN8855_INTF_CTRL_11, val);
+
+	/* RX CDR - improve RX Jitter Tolerance */
+	an8855_reg_read(priv, AN8855_RG_QP_CDR_LPF_BOT_LIM, &val);
+	val &= ~(0x7 << 24);
+	val |= (0x5 << 24);
+	val &= ~(0x7 << 20);
+	val |= (0x5 << 20);
+	an8855_reg_write(priv, AN8855_RG_QP_CDR_LPF_BOT_LIM, val);
 
 	/* PLL */
 	an8855_reg_read(priv, AN8855_QP_DIG_MODE_CTRL_1, &val);
