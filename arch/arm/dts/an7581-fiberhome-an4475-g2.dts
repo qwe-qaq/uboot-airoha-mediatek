@@ -1,0 +1,144 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+/*
+ * FiberHome AN4475-G2 - U-Boot board DTS (uboot-airoha-mediatek v2026.10).
+ *
+ * Hardware evidence: vendor TTL boot log (2026-11-10) plus live telnet
+ * probing. AN7581, 512 MiB PCDDR4-2666, S35ML04G3 512 MiB SPI-NAND,
+ * 4x GE + 1x 2.5G combo + downstream 2.5G Rb GPON, 2x2 Wi-Fi 7.
+ *
+ * The stock flash is SPI-NAND driven by the SNFI engine, so &nand keeps
+ * its default disabled state from an7581.dtsi: both nodes drive the same
+ * NFI block and only one of them may be enabled.
+ *
+ * The UBI "factory" volume is 2 MiB (AN4-2MiB container from
+ * qwe-qaq/AN75XX-factory), NOT the 1 MiB used by the H3C / HG5585F
+ * boards. U-Boot reads the label MAC at container offset 0x40.
+ */
+/dts-v1/;
+
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+#include "an7581.dtsi"
+
+/ {
+	model = "FiberHome AN4475-G2";
+	compatible = "fiberhome,an4475-g2",
+		     "airoha,an7581",
+		     "airoha,en7581";
+
+	aliases {
+		serial0 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+		linux,usable-memory-range = <0x0 0x80200000 0x0 0x1fe00000>;
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x0 0x20000000>;
+	};
+
+	keys {
+		compatible = "gpio-keys";
+
+		/* BSP IN_SYS_RESET=0; vendor FDT gpio-keys-polled GPIO0 low. */
+		reset {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pinctrl 0 GPIO_ACTIVE_LOW>;
+			debounce-interval = <60>;
+		};
+
+		/*
+		 * BSP IN_WIFI_SET=17 (IN_WPS_SET=-1), verified idle-high.
+		 * U-Boot's failsafe only uses "reset"; this node keeps the
+		 * U-Boot DT in sync with the Linux DTS. If initr_dm() reports
+		 * a gpio-keys error on this board, comment it out - the
+		 * HG5585F board had to disable its extra keys for that reason.
+		 */
+		wlan {
+			label = "wlan";
+			linux,code = <KEY_WLAN>;
+			gpios = <&pinctrl 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <60>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		/* "Power LED GPIO 35" (U-Boot) / "pwr_led GPIO: 35" (kernel),
+		 * power_gpio=23 hex, BSP OUT_POWER_LED=35, active low. */
+		led-0 {
+			label = "green:power";
+			gpios = <&pinctrl 35 GPIO_ACTIVE_LOW>;
+		};
+
+		/*
+		 * No other GPIO LEDs: the system / VPN / optical / LOS /
+		 * downstream-PON / WLAN panel LEDs are all -1 in the BSP
+		 * GPIO table and are not SoC-GPIO driven. The PON LED is a
+		 * PWM LED in the Linux DTS, which U-Boot cannot drive.
+		 * The failsafe env therefore only uses green:power.
+		 */
+	};
+};
+
+&snfi {
+	status = "okay";
+};
+
+&spi_nand {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/* BootROM reads the BL2 FIP at offset 0x800 of the first PEB. */
+		partition@0 {
+			label = "bl2";
+			reg = <0x0 0x20000>;
+		};
+
+		/* UBI manages every eraseblock after BL2. Size 0 = to end of
+		 * flash (same convention as the other AN7581 UBI boards).
+		 * The Linux/PonWrt DTS stops at 0x1d800000 to leave the
+		 * vendor BMT/BBT area alone; both start at 0x20000. */
+		partition@20000 {
+			label = "ubi";
+			reg = <0x20000 0x000000>;
+		};
+	};
+};
+
+/* Uplink BOSA UX3363 @ I2C 0x51, downstream UX3326S1 @ 0x63. */
+&i2c0 {
+	status = "okay";
+};
+
+&eth {
+	status = "okay";
+};
+
+&gdm1 {
+	status = "okay";
+};
+
+/* Both xHCI controllers are registered by the vendor firmware, USB2 only
+ * ("usb serdes is not USB, don't init u3"): USB1 SerDes is muxed to the
+ * downstream FTTR HSGMII link. */
+&usb0 {
+	status = "okay";
+
+	phys = <&usb0_phy PHY_TYPE_USB2>;
+	mediatek,u3p-dis-msk = <0x1>;
+};
+
+&usb1 {
+	status = "okay";
+
+	phys = <&usb1_phy PHY_TYPE_USB2>;
+	mediatek,u3p-dis-msk = <0x1>;
+};
