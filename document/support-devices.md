@@ -19,6 +19,7 @@
 | AN7581 | nokia_xg-040g-md |
 | AN7581 | fiberhome_hg5585f |
 | AN7581 | h3c_hm2004-du |
+| AN7581 | fiberhome_an4475-g2 |
 | AN7583 | evb |
 | AN7583 | nokia_xg-040g-mf |
 
