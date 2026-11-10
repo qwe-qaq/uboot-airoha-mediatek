@@ -222,6 +222,7 @@
 #define _SPI_NAND_DEVICE_ID_FS35ND02GS2F1	0xA2
 #define _SPI_NAND_DEVICE_ID_FS35ND02GD1F1	0xB2
 #define _SPI_NAND_DEVICE_ID_S35ML02G3		0x25
+#define _SPI_NAND_DEVICE_ID_S35ML04G3		0x35	/* 4 Gbit / 512 MiB, e.g. FiberHome AN4475-G2 */
 
 /* SPI NAND register address of command set */
 #define _SPI_NAND_ADDR_EXTEND_BFD			0x10	/* Address of extend ECC Bit Flip count Detection*/
