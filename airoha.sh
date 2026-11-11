@@ -236,10 +236,23 @@ blob_source() {
 
 # Per-SoC subdirectory under tools/build_airoha/<base>/ the Makefile reads;
 # CONFIG_AIROHA_FIP_BLOBS_DIR overrides the default <soc>_default variant.
+#
+# The default variant MUST be derived from CONFIG_SYS_SOC (the value the
+# Kconfig selects per TARGET_* symbol), NOT from the caller's $SOC alias: an
+# EN7562 package variant selects TARGET_EN7523, so CONFIG_SYS_SOC is "en7523"
+# while $SOC is still "en7562".  tools/build_airoha/Makefile reads exactly
+# $CONFIG_SYS_SOC_default, so staging into $SOC_default (en7562_default) would
+# leave the blobs where the Makefile never looks ("has no .../bl2.bin").  Hence
+# the fallback below mirrors the Makefile's own SOC := $(CONFIG_SYS_SOC).
 blob_variant() {
-	local v
+	local v fam
 	v=$(config_str CONFIG_AIROHA_FIP_BLOBS_DIR)
-	echo "${v:-${SOC}_default}"
+	if [ -n "${v}" ]; then
+		echo "${v}"
+		return
+	fi
+	fam=$(config_str CONFIG_SYS_SOC)
+	echo "${fam:-${SOC}}_default"
 }
 
 # Map the resolved U-Boot SoC (CONFIG_SYS_SOC) to the atf-airoha build.sh SOC.
