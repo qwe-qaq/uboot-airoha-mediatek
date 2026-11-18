@@ -19,6 +19,7 @@
 #include <asm/global_data.h>
 #include <linux/sizes.h>
 #include <linux/types.h>
+#include <linux/string.h>
 #include <xz/unxz.h>
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -117,15 +118,16 @@ ulong board_get_load_addr(void)
 extern const u8 i2p5ge_phy_pmb[];
 extern const u32 i2p5ge_phy_pmb_size;
 
-int mt7988_i2p5ge_get_fw(const void **fw, size_t *size)
+int mt7988_i2p5ge_get_fw(void **fw, size_t *size)
 {
 #ifdef CONFIG_XZ
 	void *data;
 	int ret;
 
 	if (memcmp(i2p5ge_phy_pmb, xz_magic, sizeof(xz_magic))) {
-		*fw = i2p5ge_phy_pmb;
+		*fw = (void *)i2p5ge_phy_pmb;
 		*size = i2p5ge_phy_pmb_size;
+
 		return 0;
 	}
 
@@ -137,14 +139,17 @@ int mt7988_i2p5ge_get_fw(const void **fw, size_t *size)
 		   MT7988_2P5GE_PMB_FW_SIZE);
 	if (ret) {
 		free(data);
-		return -1;
+		return -EINVAL;
 	}
 
 	*fw = data;
+
+	/* A positive return tells the caller to free the buffer. */
+	return 1;
 #else
-	*fw = i2p5ge_phy_pmb;
+	*fw = (void *)i2p5ge_phy_pmb;
 	*size = i2p5ge_phy_pmb_size;
-#endif
 
 	return 0;
+#endif
 }
