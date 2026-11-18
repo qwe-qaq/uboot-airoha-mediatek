@@ -181,6 +181,28 @@ static void mtk_infra_rmw(struct mtk_eth_priv *priv, u32 reg, u32 clr,
 	regmap_write(priv->infra_regmap, reg, val);
 }
 
+/*
+ * On NETSYS v3 the built-in 2.5G PHY hangs off the XGMAC rather than the
+ * plain GMAC, so PHY_INTERFACE_MODE_INTERNAL has to take the same path as
+ * USXGMII and 10GBASE-R. Mirrors mtk_interface_mode_is_xgmii() in Linux.
+ */
+static bool mtk_interface_mode_is_xgmii(struct mtk_eth_priv *priv)
+{
+	if (!MTK_HAS_CAPS(priv->soc->caps, MTK_NETSYS_V3))
+		return false;
+
+	switch (priv->phy_interface) {
+	case PHY_INTERFACE_MODE_INTERNAL:
+	case PHY_INTERFACE_MODE_USXGMII:
+	case PHY_INTERFACE_MODE_10GBASER:
+	case PHY_INTERFACE_MODE_5GBASER:
+	case PHY_INTERFACE_MODE_XGMII:
+		return true;
+	default:
+		return false;
+	}
+}
+
 /* Direct MDIO clause 22/45 access via SoC */
 static int mtk_mii_rw(struct mtk_eth_priv *priv, u8 phy, u8 reg, u16 data,
 		      u32 cmd, u32 st)
@@ -548,9 +570,7 @@ static int mtk_phy_start(struct mtk_eth_priv *priv)
 	}
 
 	if (!priv->force_mode) {
-		if (priv->phy_interface == PHY_INTERFACE_MODE_USXGMII ||
-		    priv->phy_interface == PHY_INTERFACE_MODE_10GBASER ||
-		    priv->phy_interface == PHY_INTERFACE_MODE_XGMII)
+		if (mtk_interface_mode_is_xgmii(priv))
 			mtk_xphy_link_adjust(priv);
 		else
 			mtk_phy_link_adjust(priv);
@@ -924,6 +944,19 @@ static int mtk_xmac_init(struct mtk_eth_priv *priv)
 	case PHY_INTERFACE_MODE_10GBASER:
 		mtk_10gbaser_init(priv);
 		break;
+	case PHY_INTERFACE_MODE_INTERNAL:
+		/*
+		 * Take the MAC off SGMII and point the PCS mux at the built-in
+		 * 2.5G PHY, which is what set_mux_gmac2_to_2p5gphy() does in
+		 * Linux. Without it the MAC stays on SGMII and no traffic
+		 * passes, while MDIO keeps working because it is a separate
+		 * bus.
+		 */
+		mtk_ethsys_rmw(priv, ETHSYS_SYSCFG1_REG,
+			       SYSCFG1_SGMII_SEL(priv->gmac_id), 0);
+		mtk_infra_rmw(priv, priv->soc->pcs_mux_reg,
+			      MUX_G2_USXGMII_SEL, 0);
+		break;
 	default:
 		break;
 	}
@@ -936,11 +969,12 @@ static int mtk_xmac_init(struct mtk_eth_priv *priv)
 	if ((priv->phy_interface == PHY_INTERFACE_MODE_USXGMII ||
 	     priv->phy_interface == PHY_INTERFACE_MODE_10GBASER) &&
 	    priv->gmac_id == 1) {
-		mtk_infra_rmw(priv, TOPMISC_NETSYS_PCS_MUX,
+		mtk_infra_rmw(priv, priv->soc->pcs_mux_reg,
 			      NETSYS_PCS_MUX_MASK, MUX_G2_USXGMII_SEL);
 	}
 
 	if (priv->phy_interface == PHY_INTERFACE_MODE_XGMII ||
+	    priv->phy_interface == PHY_INTERFACE_MODE_INTERNAL ||
 	    priv->gmac_id == 2)
 		force_link = XGMAC_FORCE_LINK(priv->gmac_id);
 
@@ -1070,9 +1104,7 @@ static int mtk_eth_start(struct udevice *dev)
 
 			mtk_gdma_write(priv, priv->gmac_id, GDMA_EG_CTRL_REG,
 				       GDMA_CPU_BRIDGE_EN);
-		} else if ((priv->phy_interface == PHY_INTERFACE_MODE_USXGMII ||
-			    priv->phy_interface == PHY_INTERFACE_MODE_10GBASER ||
-			    priv->phy_interface == PHY_INTERFACE_MODE_XGMII) &&
+		} else if (mtk_interface_mode_is_xgmii(priv) &&
 			   priv->gmac_id != 0) {
 			mtk_gdma_write(priv, priv->gmac_id, GDMA_EG_CTRL_REG,
 				       GDMA_CPU_BRIDGE_EN);
@@ -1250,9 +1282,7 @@ static int mtk_eth_probe(struct udevice *dev)
 	mtk_eth_mdc_init(priv);
 
 	/* Set MAC mode */
-	if (priv->phy_interface == PHY_INTERFACE_MODE_USXGMII ||
-	    priv->phy_interface == PHY_INTERFACE_MODE_10GBASER ||
-	    priv->phy_interface == PHY_INTERFACE_MODE_XGMII)
+	if (mtk_interface_mode_is_xgmii(priv))
 		ret = mtk_xmac_init(priv);
 	else
 		ret = mtk_mac_init(priv);
@@ -1474,6 +1504,7 @@ static int mtk_eth_of_to_plat(struct udevice *dev)
 
 static const struct mtk_soc_data mt7988_data = {
 	.caps = MT7988_CAPS,
+	.pcs_mux_reg = TOPMISC_NETSYS_PCS_MUX_MT7988,
 	.ana_rgc3 = 0x128,
 	.gdma_count = 3,
 	.pdma_base = PDMA_V3_BASE,
@@ -1483,6 +1514,7 @@ static const struct mtk_soc_data mt7988_data = {
 
 static const struct mtk_soc_data mt7987_data = {
 	.caps = MT7987_CAPS,
+	.pcs_mux_reg = TOPMISC_NETSYS_PCS_MUX_MT7987,
 	.ana_rgc3 = 0x128,
 	.gdma_count = 3,
 	.pdma_base = PDMA_V3_BASE,

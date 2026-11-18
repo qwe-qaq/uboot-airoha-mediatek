@@ -28,6 +28,7 @@ struct mtk_eth_switch_priv;
  */
 struct mtk_soc_data {
 	u32 caps;
+	u32 pcs_mux_reg;
 	u32 ana_rgc3;
 	u32 gdma_count;
 	u32 pdma_base;
@@ -129,7 +130,14 @@ enum mkt_eth_capabilities {
 #define ETHSYS_TRGMII_CLK_SEL362_5	BIT(11)
 
 /* Top misc registers */
-#define TOPMISC_NETSYS_PCS_MUX		0x84
+/*
+ * NETSYS_PCS_MUX is at 0x11d10084 on mt7988 and at 0x10021000 on mt7987.
+ * The topmisc syscon starts at 0x11d10000 on mt7988 and at 0x10021000 on
+ * mt7987, so the register is at 0x84 on the first and at 0 on the second.
+ * Carried per SoC in pcs_mux_reg.
+ */
+#define TOPMISC_NETSYS_PCS_MUX_MT7988	0x84
+#define TOPMISC_NETSYS_PCS_MUX_MT7987	0x0
 #define NETSYS_PCS_MUX_MASK		GENMASK(1, 0)
 #define MUX_G2_USXGMII_SEL		BIT(1)
 #define MUX_HSGMII1_G1_SEL		BIT(0)
