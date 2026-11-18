@@ -949,6 +949,23 @@ config VIDEO_SEPS525
 	  Enable support for the Syncoam PM-OLED display driver (RGB 160x128).
 	  Currently driver is supporting only SPI interface.
 
+config VIDEO_ST7789P3
+	bool "Enable video support for Sitronix ST7789P3"
+	depends on DM_GPIO && DM_SPI && BACKLIGHT
+	select SPI_MEM
+	help
+	  Enable support for the Sitronix ST7789P3 LCD controller (RGB565
+	  320x240) attached over SPI in MIPI DBI type C mode, using a D/C GPIO
+	  to distinguish commands from parameters.
+
+	  A skip-init property on the panel node says an earlier stage already
+	  brought the controller up. The driver then leaves out the reset and
+	  the init sequence and draws over what is on screen.
+
+	  A rotation property says how the panel is mounted, and picks MADCTL.
+	  Both 90 and 270 give 320x240 landscape, one turned 180 degrees
+	  against the other. The property is required.
+
 source "drivers/video/zynqmp/Kconfig"
 source "drivers/video/nexell/Kconfig"
 
