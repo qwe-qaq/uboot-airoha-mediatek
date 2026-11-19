@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2026 GL.iNet
+ */
+
+/* bootph-all throughout: the framebuffer is reserved before relocation */
+&pio {
+	bootph-all;
+
+	spi1_pins: spi1-pins {
+		mux {
+			function = "spi";
+			groups = "spi1";
+		};
+	};
+
+	pwm3_pins: pwm3-pins {
+		mux {
+			function = "pwm";
+			groups = "pwm3_0";
+		};
+	};
+};
+
+/*
+ * The clocks are the dummy fixed 208 MHz mt7988.dtsi hands every SPI master,
+ * so the mux and the gates stay as BL2 left them. BL2 drives this bus itself
+ * to draw the splash, so it sets both.
+ */
+&spi1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi1_pins>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	bootph-all;
+	clocks = <&spi_clk>, <&spi_clk>;
+	clock-names = "sel-clk", "spi-clk";
+	enhance_timing;
+	dma_ext;
+	ipm_design;
+	tick_dly = <2>;
+	sample_sel = <0>;
+
+	display@0 {
+		compatible = "sitronix,st7789p3";
+		reg = <0>;
+		spi-max-frequency = <52000000>;
+		spi-cpol;
+		spi-cpha;
+		bootph-all;
+
+		/* BL2 drew the splash and left the controller running */
+		skip-init;
+
+		rotation = <90>;
+
+		dc-gpios = <&pio 62 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&pio 68 GPIO_ACTIVE_HIGH>;
+		backlight = <&backlight>;
+	};
+};
+
+&pwm {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm3_pins>;
+	status = "okay";
+	bootph-all;
+};
+
+/ {
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm 3 50000>;
+		brightness-levels = <0 16 32 48 64 80 96 112 128 144 160 176 192 208 224 255>;
+		default-brightness-level = <12>;
+		bootph-all;
+	};
+};
