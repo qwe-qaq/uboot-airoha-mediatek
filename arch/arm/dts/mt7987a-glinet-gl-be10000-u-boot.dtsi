@@ -1,0 +1,85 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2026 GL.iNet
+ */
+
+#include "mt7987a-u-boot.dtsi"
+#include "mt7987-netsys-u-boot.dtsi"
+
+/ {
+	model = "GL.iNet GL-BE10000";
+	compatible = "glinet,gl-be10000",
+		     "mediatek,mt7987";
+};
+
+/*
+ * LAN port, and the one to use. gmac1 drives the SoC built-in 2.5G PHY, which
+ * mtk-2p5ge supports on MT7987. Its firmware is linked into U-Boot by
+ * board/mediatek/mt7987/i2p5ge_fw.c, so it needs no storage and works before
+ * any UBI exists.
+ */
+&eth1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&mdio0_pins>;
+	phy-mode = "internal";
+	phy-handle = <&phy15>;
+
+	phy15: eth-phy@15 {
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <15>;
+	};
+};
+
+/*
+ * pio 0 is the MDIO bus reset, active low. mtk_eth only releases it on the
+ * switch code path, which this board does not take, so hog it high.
+ */
+&pio {
+	mdio-reset-hog {
+		gpio-hog;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "mdio-reset";
+	};
+};
+
+&spi2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi2_flash_pins>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	must_tx;
+	enhance_timing;
+	dma_ext;
+	ipm_design;
+	support_quad;
+	tick_dly = <2>;
+	sample_sel = <0>;
+
+	spi_nand@0 {
+		compatible = "spi-nand";
+		reg = <0>;
+		spi-max-frequency = <52000000>;
+		spi-rx-bus-width = <4>;
+		spi-tx-bus-width = <4>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "bl2";
+				reg = <0x0 0x200000>;
+			};
+
+			partition@200000 {
+				label = "ubi";
+				reg = <0x200000 0x1fe00000>;
+				compatible = "linux,ubi";
+			};
+		};
+	};
+};

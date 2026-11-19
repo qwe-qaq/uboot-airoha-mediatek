@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) 2026 GL.iNet
+ */
+
+/dts-v1/;
+#include "mt7987a.dtsi"
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "GL.iNet GL-BE10000";
+	compatible = "glinet,gl-be10000",
+		     "mediatek,mt7987";
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		button-reset {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 4 GPIO_ACTIVE_LOW>;
+			debounce-interval = <10>;
+		};
+	};
+};
