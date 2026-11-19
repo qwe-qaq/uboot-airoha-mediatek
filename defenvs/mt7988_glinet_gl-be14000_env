@@ -21,6 +21,7 @@ bootmenu_4=[31mLoad BL31+U-Boot FIP via TFTP then write to eMMC.[0m=run boot_t
 bootmenu_5=[31mLoad BL2 preloader via TFTP then write to eMMC.[0m=run boot_tftp_write_bl2 ; run bootmenu_confirm_return
 bootmenu_6=Reboot.=reset
 bootmenu_7=Reset all settings to factory defaults.=run reset_factory ; reset
+bootmenu_8=[32mStart Web failsafe.[0m=httpd
 boot_first=if button reset ; then run boot_tftp ; setenv flag_recover 1 ; run boot_default ; fi ; bootmenu
 boot_default=if env exists flag_recover ; then else run bootcmd ; fi ; run boot_tftp_forever
 boot_emmc=run emmc_read_kernel && bootm $loadaddr
@@ -53,4 +54,4 @@ reset_factory=eraseenv && reset
 _init_env=setenv _init_env ; saveenv ; saveenv
 _firstboot=setenv _firstboot ; run ethaddr_factory ; run _switch_to_menu ; run _init_env ; run boot_first
 _switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
-_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_subtitle "      [33m$ver[0m"

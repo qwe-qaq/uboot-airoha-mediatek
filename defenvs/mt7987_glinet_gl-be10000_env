@@ -26,6 +26,7 @@ bootmenu_6=[31mLoad BL31+U-Boot FIP via TFTP then write to NAND.[0m=run boot_t
 bootmenu_7=[31mLoad BL2 preloader via TFTP then write to NAND.[0m=run boot_tftp_write_bl2 ; run bootmenu_confirm_return
 bootmenu_8=Reboot.=reset
 bootmenu_9=Reset all settings to factory defaults.=run reset_factory ; reset
+bootmenu_10=[32mStart Web failsafe.[0m=httpd
 boot_first=if button reset ; then run boot_tftp_recovery ; setenv flag_recover 1 ; run boot_default ; fi ; bootmenu
 boot_default=if env exists flag_recover ; then else run bootcmd ; fi ; run boot_recovery ; setenv replacevol 1 ; run boot_tftp_forever
 boot_production=run ubi_read_production && bootm $loadaddr#$bootconf
@@ -52,4 +53,4 @@ ubi_write_recovery=ubi check recovery && ubi remove recovery ; run ubi_remove_ro
 _init_env=setenv _init_env ; run ubi_create_env ; saveenv ; saveenv
 _firstboot=setenv _firstboot ; run ethaddr_factory ; run _switch_to_menu ; run _init_env ; run boot_first
 _switch_to_menu=setenv _switch_to_menu ; setenv bootdelay 3 ; setenv bootmenu_delay 3 ; setenv bootmenu_0 $bootmenu_0d ; setenv bootmenu_0d ; run _bootmenu_update_title
-_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_title "$bootmenu_title       [33m$ver[0m"
+_bootmenu_update_title=setenv _bootmenu_update_title ; setenv bootmenu_subtitle "      [33m$ver[0m"

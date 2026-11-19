@@ -44,6 +44,8 @@
 | MT7986 | rfb-ubi |
 | MT7986 | asus_rt-ax59u-ubi |
 | MT7986 | ruijie_rg-x60-new-ubi |
+| MT7987 | glinet_gl-be10000 |
+| MT7988 | glinet_gl-be14000 |
 
 ## Mediatek MTMIPS
 
