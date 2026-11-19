@@ -24,6 +24,8 @@
 #include <linux/log2.h>
 #include <xz/unxz.h>
 
+#include "../common/panel_logo.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #ifndef CONFIG_RESET_BUTTON_LABEL
@@ -50,6 +52,9 @@ int board_late_init(void)
 		}
 	}
 	env_relocate();
+
+	board_show_logo();
+
 	return 0;
 }
 
@@ -83,6 +88,8 @@ int mtk_ft_system_setup(void *blob, struct bd_info *bd)
 		break
 		;;
 	}
+
+	fdt_mark_panel_initialised(blob);
 
 	chosen = fdt_path_offset(blob, "/chosen");
 	if (chosen <= 0)

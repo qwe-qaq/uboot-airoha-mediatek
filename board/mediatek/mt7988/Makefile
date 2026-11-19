@@ -2,6 +2,8 @@
 
 obj-y	+= mt7988_rfb.o
 obj-$(CONFIG_PHY_MEDIATEK_2P5GE) += i2p5ge_fw.o
+obj-$(CONFIG_VIDEO_ST7789P3)		+= ../common/panel_logo.o		\
+					   ../../../tools/logos/openwrt_logo.bmp.o
 
 # Copy firmware files to build directory before assembly (only if out-of-tree build)
 $(obj)/i2p5ge_fw.o: copy_i2p5ge_fw
